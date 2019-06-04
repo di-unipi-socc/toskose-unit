@@ -1,6 +1,6 @@
 #!/bin/sh
 
 while [ 0 ]; do
-  echo "Hi! I am alive!"
-  sleep 5
+  cat easter_egg.txt
+  sleep 10
 done
