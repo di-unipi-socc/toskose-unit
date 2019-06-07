@@ -1,0 +1,17 @@
+sudo: required
+
+services:
+  - docker
+
+script:
+  - docker --version
+  - export VERSION=$(cat version)
+  - export IMAGE_NAME=diunipisocc/toskose-unit
+  - |
+    docker build \
+    --build-arg APP_VERSION=${VERSION} \
+    -t $IMAGE_NAME:${VERSION} \
+    -t $IMAGE_NAME:latest \
+    .
+  - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+  - docker push $IMAGE_NAME
