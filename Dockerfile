@@ -90,8 +90,9 @@ LABEL maintainer.name="Matteo Bogo" \
 # https://github.com/docker/docker/issues/4032#issuecomment-34597177
 ARG DEBIAN_FRONTEND=noninteractive
 
+# entrypoint (includes also some initialization logic)
 WORKDIR /toskose/supervisord
-COPY base/scripts/entrypoint.sh ./entrypoint.sh
+COPY base/entrypoint.sh .
 
 RUN set -eu \
     && apt-get -qq update \
@@ -101,8 +102,13 @@ RUN set -eu \
     && apt-get -qq clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-COPY --from=bundler /supervisord/dist/supervisord /toskose/supervisord/bundle
-COPY base/configs/supervisord/supervisord.conf /toskose/supervisord/config/supervisord.conf
+# Supervisord Bundle (+ Python interpreter)
+WORKDIR /toskose/supervisord/bundle
+COPY --from=bundler /supervisord/dist/supervisord ./
+
+# Supervisord config
+WORKDIR /toskose/supervisord/config
+COPY base/configs/supervisord/supervisord.conf .
 
 # Create Apps structure (lifecycle scripts + logs)
 # A test program is included
@@ -117,7 +123,8 @@ RUN set -eu \
 # DEV ONLY
 # !! overwrite ENVs in production !!
 WORKDIR /toskose
-ENV SUPERVISORD_HTTP_PORT=9001 \
+ENV TOSCA_APP_NAME=toskose \
+    SUPERVISORD_HTTP_PORT=9001 \
     SUPERVISORD_HTTP_USER=admin \
     SUPERVISORD_HTTP_PASSWORD=admin \
     SUPERVISORD_LOG_LEVEL=info
