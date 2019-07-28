@@ -4,7 +4,7 @@
 # Looking in the /toskose/apps dir for obtaining the names of the hosted apps.
 cd /toskose/apps
 for d in */ ; do
-    echo "creating root dir for ${d}.."
+    echo "creating root dir for /$TOSCA_APP_NAME-$d.."
     mkdir -p /$TOSCA_APP_NAME-$d
 done
 
