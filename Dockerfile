@@ -1,8 +1,12 @@
 # toskose-unit - base image
 
-ARG APP_VERSION
+ARG VERSION
+ARG VCS_REF
+ARG BUILD_DATE
+
 ARG DEBIAN_VERSION=stretch
 ARG PYTHON_VERSION=2.7.15
+
 ARG SUPERVISORD_VERSION=3.3.5
 ARG SUPERVISORD_REPOSITORY=https://github.com/Supervisor/supervisor/archive/${SUPERVISORD_VERSION}.tar.gz
 
@@ -81,14 +85,21 @@ RUN python -m ensurepip \
 # Supervisord with a minimal configuration
 FROM debian:${DEBIAN_VERSION}-slim as release
 
-ARG APP_VERSION
+ARG VERSION
+ARG VCS_REF
+ARG BUILD_DATE
 
-LABEL maintainer.name="Matteo Bogo" \
-      maintainer.email="matteo.bogo@gmail.com" \
-      version=${APP_VERSION}
+LABEL org.label-schema.build-date=${BUILD_DATE} \
+      org.label-schema.name="Toskose Unit" \
+      org.label-schema.description="The base image used for the 'toskosing' process" \
+      org.label-schema.vcs-url="https://github.com/di-unipi-socc/toskose-unit" \
+      org.label-schema.vcs-ref=${VCS_REF} \
+      org.label-schema.vendor="SOCC Unipi" \
+      org.label-schema.version=${VERSION} \
+      org.label-schema.schema-version="1.0"
 
 # https://github.com/docker/docker/issues/4032#issuecomment-34597177
-ARG DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 # entrypoint (includes also some initialization logic)
 WORKDIR /toskose/supervisord
