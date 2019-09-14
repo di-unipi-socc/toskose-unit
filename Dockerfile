@@ -1,7 +1,7 @@
 # toskose-unit - base image
 ARG ALPINE_VERSION=3.10
 ARG PYTHON_VERSION=3.7.4
-ARG DEBIAN_VERSION=buster
+ARG DEBIAN_VERSION=stretch
 
 ARG SUPERVISORD_VERSION=4.0.4
 ARG SUPERVISORD_REPOSITORY=https://github.com/Supervisor/supervisor/archive/${SUPERVISORD_VERSION}.tar.gz
