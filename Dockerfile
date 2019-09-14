@@ -1,17 +1,13 @@
 # toskose-unit - base image
+ARG ALPINE_VERSION=3.10
+ARG PYTHON_VERSION=3.7.4
+ARG DEBIAN_VERSION=buster
 
-ARG VERSION
-ARG VCS_REF
-ARG BUILD_DATE
-
-ARG DEBIAN_VERSION=stretch
-ARG PYTHON_VERSION=2.7.15
-
-ARG SUPERVISORD_VERSION=3.3.5
+ARG SUPERVISORD_VERSION=4.0.4
 ARG SUPERVISORD_REPOSITORY=https://github.com/Supervisor/supervisor/archive/${SUPERVISORD_VERSION}.tar.gz
 
 # BASE IMAGE
-FROM alpine as base
+FROM alpine:${ALPINE_VERSION} as base
 
 WORKDIR /tmp/scripts
 COPY base/scripts/ .
@@ -39,15 +35,14 @@ RUN mkdir -p /tmp/src/supervisord \
     && rm /tmp/src/supervisord/${SUPERVISORD_VERSION}.tar.gz
 
 ### TESTING STAGE ###
-FROM fetcher as source-tester
+FROM python:${PYTHON_VERSION}-alpine as source-tester
 
-WORKDIR /tmp
-RUN apk add --no-cache --quiet \
-    tree \
-    && tree -a \
-    && apk del --quiet \
-    tree \
-    && rm -rf /var/cache/apk/*
+WORKDIR /test
+COPY --from=fetcher /tmp/src/supervisord .
+RUN python3 -m ensurepip \
+    && pip3 install --upgrade pip setuptools \
+    && pip3 install --quiet meld3 pytest  \
+    && pytest
 ### ------------- ###
 
 # - Pyinstaller Issue with Alpine OS -
@@ -59,7 +54,7 @@ RUN apk add --no-cache --quiet \
 # BUNDLER STAGE
 # Bundling Supervisord (package freezing) into a standalone executable,
 # including its dependencies (meld3) and the Python interpreter.
-FROM python:${PYTHON_VERSION} as bundler
+FROM python:${PYTHON_VERSION}-${DEBIAN_VERSION} as bundler
 
 WORKDIR /supervisord
 RUN mkdir -p src/ dist/ temp/
@@ -83,7 +78,9 @@ RUN python -m ensurepip \
 
 # RELEASE STAGE
 # Supervisord with a minimal configuration
-FROM debian:${DEBIAN_VERSION}-slim as release
+# minideb is a minimal debian-based base image for containers
+# https://github.com/bitnami/minideb
+FROM bitnami/minideb:${DEBIAN_VERSION} as release
 
 ARG VERSION
 ARG VCS_REF
@@ -101,15 +98,12 @@ LABEL org.label-schema.build-date=${BUILD_DATE} \
 # https://github.com/docker/docker/issues/4032#issuecomment-34597177
 ENV DEBIAN_FRONTEND=noninteractive
 
-# entrypoint (includes also some initialization logic)
 WORKDIR /toskose/supervisord
-COPY base/entrypoint.sh .
 
 RUN set -eu \
     && apt-get -qq update \
     && mkdir -p bundle/ config/ tmp/ logs/ \
     && touch logs/supervisord.log \
-    && chmod +x entrypoint.sh \
     && apt-get -qq clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -141,5 +135,7 @@ ENV TOSCA_APP_NAME=toskose \
     SUPERVISORD_LOG_LEVEL=info
 
 VOLUME /toskose/apps /toskose/supervisord/logs
+EXPOSE 9001/tcp
 
-ENTRYPOINT ["/bin/sh", "-c", "/toskose/supervisord/entrypoint.sh"]
+ENTRYPOINT ["/toskose/supervisord/bundle/supervisord"]
+CMD ["-c", "/toskose/supervisord/config/supervisord.conf"]

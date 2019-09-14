@@ -1,5 +1,6 @@
 #!/bin/sh
 
+mkdir /toskose-test/
 mv /toskose/apps/test/artifacts/* /toskose-test/
 
 while [ 0 ]; do
